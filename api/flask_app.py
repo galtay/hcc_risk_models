@@ -50,7 +50,7 @@ def evaluate_model(model_name):
         abort(404)
 
     if model_name == 'V2216_79_O2':
-        from cms_hcc_risk_models.v2216_79_O2 import risk_model
+        from hcc_risk_models.v2216_79_O2 import risk_model
         model = risk_model.V2216_79_O2()
     elif model_name == 'V2217_79_O1':
         from hcc_risk_models.v2217_79_O1 import risk_model
