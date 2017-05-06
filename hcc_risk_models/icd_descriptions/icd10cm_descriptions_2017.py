@@ -43,4 +43,4 @@ class Icd10CmDefinitions:
 
 if __name__ == '__main__':
 
-    icd10 = Icd10Definitions()
+    icd10 = Icd10CmDefinitions()

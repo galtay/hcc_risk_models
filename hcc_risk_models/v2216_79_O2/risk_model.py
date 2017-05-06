@@ -21,6 +21,7 @@ from hcc_risk_models.common import v22i0ed1
 from hcc_risk_models.common import v22i9ed1
 
 from hcc_risk_models.common.formats import f221690p
+from hcc_risk_models.common.coefficients import coeff_loader
 from hcc_risk_models.v2216_79_O2 import regression_variables as rv
 
 
@@ -76,7 +77,7 @@ class V2216_79_O2:
     DESCRIPTION = 'CMS-HCC 2017 Initial Model, 79 HCC Variables'
 
     FORMATS = f221690p.HccFormats(FORMATS_FILE)
-    COEFFICIENTS = pandas.read_csv(COEFFICIENTS_FILE).iloc[0]
+    COEFFICIENTS = coeff_loader.Coefficients(COEFFICIENTS_FILE)
     HCC_DESCRIPTIONS = v22h79l1.HCC_DESCRIPTIONS
 
     REQUIRED_DEMOGRAPHICS_COLUMNS = ['pt_id', 'sex', 'dob', 'ltimcaid', 'nemcaid', 'orec']
@@ -280,6 +281,10 @@ class V2216_79_O2:
             'model_name': self.NAME,
             'model_description': self.DESCRIPTION,
             'model_segments': self.SEGMENT_DESCRIPTIONS,
+            'model_coefficients': {
+                'description': self.COEFFICIENTS.description,
+                'cms_denominator': self.COEFFICIENTS.cms_denominator,
+            },
         }
 
         # build final result
@@ -473,7 +478,7 @@ class V2216_79_O2:
             'model_name': self.NAME,
             'model_description': self.DESCRIPTION,
             'model_segments': self.SEGMENT_DESCRIPTIONS,
-            'model_coefficients': self.COEFFICIENTS.to_dict(),
+            'model_coefficients': self.COEFFICIENTS.to_json(),
             'hcc_descriptions': self.HCC_DESCRIPTIONS,
             'icd_to_hcc_mappings': self.return_icd_hcc_mappings(),
         }
