@@ -7,7 +7,7 @@ DIR_HERE = os.path.split(PATH_HERE)[0]
 DEFAULT_ORDER_FNAME = os.path.join(DIR_HERE, 'icd10cm_order_2017.txt')
 
 
-class Icd10Definitions:
+class Icd10CmDefinitions:
 
     def __init__(self, fname=DEFAULT_ORDER_FNAME):
 
