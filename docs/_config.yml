@@ -13,11 +13,12 @@
 # you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
-title: CMS HCC Risk Models REST API
+title: REST API for HCC Risk Models from CMS and HHS
 email: gabriel.altay@gmail.com
 description: > # this means to ignore newlines until "baseurl:"
-  A REST API for the Centers for Medicare and Medicaid Services (CMS)
-  Hierarchical Condition Category (HCC) risk models.
+  A REST API for Hierarchical Condition Category (HCC) risk models
+  from the Centers for Medicare and Medicaid Services (CMS)
+  and the Department of Health and Human Services (HHS).
 
 twitter_username: gabrielaltay
 github_username:  galtay

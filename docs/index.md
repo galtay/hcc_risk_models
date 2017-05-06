@@ -5,11 +5,17 @@ layout: default
 # ** Disclaimer **
 
 This is not an official product of the [Centers for Medicare and Medicaid
-Services (CMS)][1] or [RTI International][2].  This is an open source project
-to increase the availability of their public [risk adjustment models][3].
+Services (CMS)][1], the [Department of Health and Human Services (HHS)][2],
+or [RTI International][3].  This is an open source project to increase the
+availability of their public risk adjustment models,
+
+ - [CMS HCC Models][4]
+ - [HHS HCC Models][5]
 
 
 # Introduction
+
+## CMS Model
 
 > The CMS hierarchical condition categories (CMS-HCC) model, implemented in
 2004, adjusts Medicare capitation payments to Medicare Advantage health care
@@ -20,7 +26,23 @@ have been if they had enrolled beneficiaries with the average risk profile,
 while MA plans that care for the sickest patients are paid proportionately more
 than if they had enrolled beneficiaries with the average risk profile.
 >
-> -- <cite>[Evaluation of the CMS-HCC Risk Adjustment Model][4]</cite>
+> -- <cite>[Evaluation of the CMS-HCC Risk Adjustment Model][6]</cite>
+
+## HHS Model
+
+> Section 1343 of the Affordable Care Act (ACA) of 2010 provides for a program
+of risk adjustment for all non-grandfathered plans in the individual and small
+group market both inside and outside of the Marketplaces. The ACA directs the
+Secretary, in consultation with the states, to establish criteria and methods to
+be used in determining the actuarial risk of plans within a state. States
+electing to operate a risk adjustment program, or the Department of Health and
+Human Services (HHS) on behalf of states not electing to operate a risk
+adjustment program,  will  assess  charges  to  plans  that experience lower
+than average actuarial risk and use them to make payments to plans that have
+higher than average actuarial risk.
+>
+> -- <cite>[Affordable Care Act Risk Adjustment: Overview, Context, and Challenges][7]</cite>
+
 
 
 # Quick Start Guide
@@ -440,6 +462,9 @@ This will return a risk adjustment JSON object,
 
 
 [1]: https://www.cms.gov
-[2]: https://www.rti.org/
-[3]: https://www.cms.gov/medicare/health-plans/medicareadvtgspecratestats/risk-adjustors.html
-[4]: https://www.cms.gov/Medicare/Health-Plans/MedicareAdvtgSpecRateStats/downloads/evaluation_risk_adj_model_2011.pdf
+[2]: https://www.hhs.gov
+[3]: https://www.rti.org
+[4]: https://www.cms.gov/medicare/health-plans/medicareadvtgspecratestats/risk-adjustors.html
+[5]: https://www.cms.gov/CCIIO/Resources/Regulations-and-Guidance
+[6]: https://www.cms.gov/Medicare/Health-Plans/MedicareAdvtgSpecRateStats/downloads/evaluation_risk_adj_model_2011.pdf
+[7]: https://www.cms.gov/mmrr/Downloads/MMRR2014_004_03_a02.pdf
