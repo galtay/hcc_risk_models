@@ -1,0 +1,15 @@
+ %MACRO V22H79M1(ICD9=);
+ %***********************************************************************
+ ************************************************************************
+
+ 1  MACRO NAME:      V22H79M1
+ 2  PURPOSE:         to assign additional CC for some ICD9s
+ 3  PARAMETERS:      ICD9 - diagnosis variable in a diagnosis file
+ ***********************************************************************;
+   IF &ICD9 IN ("36202" )
+   THEN CC18  = 1 ;
+   ELSE
+   IF &ICD9 IN ("40403","40413","40493" )
+   THEN CC85  = 1 ;
+
+ %MEND V22H79M1;

@@ -1,0 +1,367 @@
+ %MACRO V1213J1M(INP=, IND=, OUTDATA=, IDVAR=, KEEPVAR=, SEDITS=,
+                 DATE_ASOF=, FMNAME=I12131Y12Y13YC, DF=1 );
+
+%**********************************************************************
+ * V1213J1M creates HCC and score variables for each person who is
+ * present in a person file.
+ * If a person has at least one diagnosis in DIAG file then HCCs are
+ * created, otherwise HCCs are set to 0.
+ * Score variables are created using coefficients from 4 final models:
+ * community, institutional, new enrollees, SNP new enrollees.
+ *
+ * Assumptions about input files:
+ *   - both files are sorted by person ID
+ *   - person level file has the following variables:
+ *     :&IDVAR  - person ID variable (it is a macro parameter)
+ *     :DOB     - date of birth
+ *     :SEX     - sex
+ *     :OREC    - original reason for entitlement
+ *     :MCAID   - Medicaid dummy variable
+ *     :NEMCAID - Medicaid dummy variable for new enrollees
+ *
+ *   - diagnosis level file has the following variables:
+ *     :&IDVAR  - person ID variable (it is a macro parameter)
+ *     :DIAG    - diagnosis
+ *
+ * Parameters:
+ *      INP       - input person dataset
+ *      IND       - input diagnosis dataset
+ *      OUTDATA   - output dataset
+ *      IDVAR     - name of person id variable (HICNO for Medicare data)
+ *      KEEPVAR   - variables to keep in the output file
+ *      SEDITS    - a switch that controls whether to perform edits on 
+ *                  ICD9. 1-YES, 0-NO
+ *      DATE_ASOF - reference date to calculate age. Set to February 1 
+ *                  of the payment year for consistency with CMS.
+ *      FMNAME    - version of format. For this version of the software
+ *                  it is set to default FMNAME=I12131Y12Y13YC
+ *      DF        - normalization factor.
+ *                  Default=1
+ *
+ * External macros.
+ *      %AGESEXNV  - create age/sex, originally disabled, disabled vars
+ *      %EDITICD9  - perform edits to diagnosis
+ *      %V12H70M   - assign one ICD9 to multiple CCs
+ *      %V12H70L1  - assign labels to HCCs
+ *      %V12H70H   - set HCC=0 according to hierarchies
+ *      %SCOREVAR  - calculate a score variable
+ *
+ ***********************************************************************;
+
+ %**********************************************************************
+ * step1: include external macros
+ ***********************************************************************;
+ %INCLUDE IN0(AGESEXNV) /SOURCE2; %* create demographic variables;
+ %INCLUDE IN0(EDITICD9) /SOURCE2; %* perform edits;
+ %INCLUDE IN0(V12H70L1) /SOURCE2; %* hcc labels;
+ %INCLUDE IN0(V12H70H)  /SOURCE2; %* hierarchies;
+ %INCLUDE IN0(V12H70M)  /SOURCE2; %* multiple CCs;
+ %INCLUDE IN0(SCOREVAR) /SOURCE2; %* calculate score variable;
+
+ %**********************************************************************
+ * step2: define internal macro variables
+ ***********************************************************************;
+
+ %LET N_CC=189;         %*max # of HCCs;
+
+ %* age/sex variables for community and insititutional regression;
+ %LET AGESEXV=  F0_34  F35_44 F45_54 F55_59 F60_64 F65_69
+                F70_74 F75_79 F80_84 F85_89 F90_94 F95_GT
+                M0_34  M35_44 M45_54 M55_59 M60_64 M65_69
+                M70_74 M75_79 M80_84 M85_89 M90_94 M95_GT;
+
+  %*list of HCCs included in models;
+ %LET CMSHCC = %STR(
+      HCC1      HCC2      HCC5     HCC7       HCC8
+      HCC9      HCC10     HCC15    HCC16      HCC17
+      HCC18     HCC19     HCC21    HCC25      HCC26
+      HCC27     HCC31     HCC32    HCC33      HCC37
+      HCC38     HCC44     HCC45    HCC51      HCC52
+      HCC54     HCC55     HCC67    HCC68      HCC69
+      HCC70     HCC71     HCC72    HCC73      HCC74
+      HCC75     HCC77     HCC78    HCC79      HCC80
+      HCC81     HCC82     HCC83    HCC92      HCC95
+      HCC96     HCC100    HCC101   HCC104     HCC105
+      HCC107    HCC108    HCC111   HCC112     HCC119
+      HCC130    HCC131    HCC132   HCC148     HCC149
+      HCC150    HCC154    HCC155   HCC157     HCC158
+      HCC161    HCC164    HCC174   HCC176     HCC177);
+
+  %*interaction variables;
+  %LET INTERRAC_VARS = %STR( D_HCC5  D_HCC44  D_HCC51  D_HCC52 D_HCC107
+                             DM_CHF1 DM_CVD   CHF_COPD COPD_CVD_CAD
+                             RF_CHF1 RF_CHF_DM DM_CHF  RF_CHF);
+
+  %*variables for Community regression ;
+  %LET COMM_REG= %STR(&AGESEXV
+                      Medicaid_Female_Aged      Medicaid_Female_Disabled
+                      Medicaid_Male_Aged        Medicaid_Male_Disabled
+                      OriginallyDisabled_Female OriginallyDisabled_Male
+                      D_HCC5  D_HCC44  D_HCC51  D_HCC52  D_HCC107
+            DM_CHF1  DM_CVD  CHF_COPD  COPD_CVD_CAD  RF_CHF1  RF_CHF_DM
+                      &CMSHCC);
+
+   %*variables for Institutional regression ;
+  %LET INST_REG = %STR(&AGESEXV MCAID  ORIGDS
+                       D_HCC5 D_HCC44  D_HCC51 D_HCC52 D_HCC107
+            DM_CHF1  DM_CVD  CHF_COPD  COPD_CVD_CAD  RF_CHF1  RF_CHF_DM
+                       &CMSHCC);
+
+   %*variables for New Enrollees and SNP New Enrollees regression ;
+   %LET NE_REG=%STR(
+            NEF0_34  NEF35_44 NEF45_54 NEF55_59 NEF60_64
+            NEF65    NEF66    NEF67    NEF68    NEF69
+            NEF70_74 NEF75_79 NEF80_84 NEF85_89 NEF90_94 NEF95_GT
+            NEM0_34  NEM35_44 NEM45_54 NEM55_59 NEM60_64
+            NEM65    NEM66    NEM67    NEM68    NEM69
+            NEM70_74 NEM75_79 NEM80_84 NEM85_89 NEM90_94 NEM95_GT
+            Medicaid_female0_64  Medicaid_female65 Medicaid_female66_69
+            Medicaid_female70_74 Medicaid_female75_GT
+            Medicaid_male0_64    Medicaid_male65   Medicaid_male66_69
+            Medicaid_male70_74   Medicaid_male75_GT
+            Origdis_female65     Origdis_female66_69
+            Origdis_female70_74  Origdis_female75_GT
+            Origdis_male65       Origdis_male66_69
+            Origdis_male70_74    Origdis_male75_GT);
+
+ %**********************************************************************
+ * step3: merge person and diagnosis files outputting one record
+ *        per person with score and HCC variables for each input person
+ *        level record
+ ***********************************************************************;
+
+ DATA &OUTDATA(KEEP=&KEEPVAR );
+   %****************************************************
+    * step3.1: declaration section
+    ****************************************************;
+
+    %V12H70L1;  *HCC labels;
+
+   %* length of new variables (length for other age/sex vars is set in
+      AGESEXNV macro);
+    LENGTH CC $4. AGEF 3.
+           Medicaid_Female_Aged      Medicaid_Female_Disabled
+           Medicaid_Male_Aged        Medicaid_Male_Disabled
+           OriginallyDisabled_Female OriginallyDisabled_Male
+           Medicaid_female0_64  Medicaid_female65 Medicaid_female66_69
+           Medicaid_female70_74 Medicaid_female75_GT
+           Medicaid_male0_64    Medicaid_male65   Medicaid_male66_69
+           Medicaid_male70_74   Medicaid_male75_GT
+           Origdis_female65     Origdis_female66_69
+           Origdis_female70_74  Origdis_female75_GT
+           Origdis_male65       Origdis_male66_69
+           Origdis_male70_74    Origdis_male75_GT
+           CC1-CC&N_CC
+           HCC1-HCC&N_CC
+           &INTERRAC_VARS       3.;
+
+    %*retain cc vars;
+    RETAIN CC1-CC&N_CC 0  AGEF
+           ;
+    %*arrays;
+    ARRAY C(&N_CC)  CC1-CC&N_CC;
+    ARRAY HCC(&N_CC) HCC1-HCC&N_CC;
+    %*interaction vars;
+    ARRAY RV &INTERRAC_VARS;
+
+    %***************************************************
+    * step3.2: to bring in regression coefficients
+    ****************************************************;
+    IF _N_ = 1 THEN SET INCOEF.HCCCOEFN;
+    %***************************************************
+    * step3.3: merge
+    ****************************************************;
+    MERGE &INP(IN=IN1)
+          &IND(IN=IN2);
+    BY &IDVAR;
+
+    IF IN1 THEN DO;
+
+    %*******************************************************
+    * step3.4: for the first record for a person set CC to 0
+    ********************************************************;
+
+       IF FIRST.&IDVAR THEN DO;
+          %*set ccs to 0;
+           DO I=1 TO &N_CC;
+            C(I)=0;
+           END;
+           %* age;
+           AGEF =FLOOR((INTCK(
+                'MONTH',DOB,&DATE_ASOF)-(DAY(&DATE_ASOF)<DAY(DOB)))/12);
+       END;
+
+    %***************************************************;
+    * step3.5 if there are any diagnoses for a person
+    *         then do the following:
+    *         - create CC using format $I12131Y12Y13YC
+    *         - perform ICD9 edits using macro EDITICD9
+    *         - assign additional CC using V12H70M macro
+    ****************************************************;
+       IF IN1 & IN2 THEN DO;
+
+           CC = LEFT(PUT(DIAG,$&FMNAME..));
+
+           IF CC NE "-1.0" THEN DO;
+              %IF &SEDITS = 1 %THEN
+                %EDITICD9(ICD9=DIAG, AGE=AGEF); %*perform edits;
+              IND=INPUT(CC,4.);
+              IF 1<= IND <= &N_CC THEN DO;
+                C(IND)=1;
+                %V12H70M(ICD9=DIAG); %*multiple ccs;
+              END;
+           END;
+       END; %*CC creation;
+
+    %*************************************************************
+    * step3.6 for the last record for a person do the
+    *         following:
+    *         - create demographic variables needed (macro AGESEXNV)
+    *         - create HCC using hierarchies (macro V12H70H)
+    *         - create HCC interaction variables
+    *         - create HCC and DISABL interaction variables
+    *         - set HCCs and interaction vars to zero if there
+    *           are no diagnoses for a person
+    *         - create score for community model
+    *         - create score for institutional model
+    *         - create score for new enrollee model
+    *         - create score for SNP new enrollee model
+    **************************************************************;
+       IF LAST.&IDVAR THEN DO;
+
+           %****************************
+           * demographic vars
+           *****************************;
+           %*create age/sex cells, originally disabled, disabled vars;
+           %AGESEXNV(AGEF=AGEF, SEX=SEX, OREC=OREC);
+
+           %*interaction;
+           Medicaid_Female_Aged     = MCAID*(SEX='2')*(1 - DISABL);
+           Medicaid_Female_Disabled = MCAID*(SEX='2')*DISABL;
+           Medicaid_Male_Aged       = MCAID*(SEX='1')*(1 - DISABL);
+           Medicaid_Male_Disabled   = MCAID*(SEX='1')*DISABL;
+           OriginallyDisabled_Female= ORIGDS*(SEX='2');
+           OriginallyDisabled_Male  = ORIGDS*(SEX='1');
+
+           %* NE interactions;
+           Medicaid_female0_64   =(SEX="2" & 0<=AGEF <65 & NEF65=0
+                                     & NEMCAID>0);
+           Medicaid_female65     =(SEX="2" & NEF65 & NEMCAID>0);
+           Medicaid_female66_69  =(SEX="2" &
+                              sum(NEF66,NEF67,NEF68,NEF69) & NEMCAID>0);
+           Medicaid_female70_74  =(SEX="2" & 70<=AGEF <75 & NEMCAID>0);
+           Medicaid_female75_GT  =(SEX="2" & AGEF >74 & NEMCAID>0);
+
+           Medicaid_male0_64     =(SEX="1" & 0<=AGEF <65 & NEM65=0
+                                   & NEMCAID>0);
+           Medicaid_male65       =(SEX="1" & NEM65 & NEMCAID>0);
+           Medicaid_male66_69    =(SEX="1" &
+                              sum(NEM66,NEM67,NEM68,NEM69) & NEMCAID>0);
+           Medicaid_male70_74    =(SEX="1" & 70<=AGEF <75
+                                     & NEMCAID>0);
+           Medicaid_male75_GT    =(SEX="1" & AGEF >74 & NEMCAID>0);
+
+           Origdis_female65      =(ORIGDS & NEF65 & SEX='2');
+           Origdis_female66_69   =(ORIGDS &
+                              sum(NEF66,NEF67,NEF68,NEF69) & SEX='2');
+           Origdis_female70_74  =(ORIGDS & 70 <= AGEF  <75 & SEX='2');
+           Origdis_female75_GT  =(ORIGDS & AGEF >74 & SEX='2');
+
+           Origdis_male65       =(ORIGDS & NEM65 & SEX='1');
+           Origdis_male66_69    =(ORIGDS &
+                              sum(NEM66,NEM67,NEM68,NEM69) & SEX='1');
+           Origdis_male70_74    =(ORIGDS & 70 <= AGEF  <75 & SEX='1');
+           Origdis_male75_GT    =(ORIGDS & AGEF >74 & SEX='1');
+
+           IF IN1 & IN2 THEN DO;
+               %**********************
+               * hierarchies
+               **********************;
+               %V12H70H;
+               %************************
+               * interaction variables
+               *************************;
+               %*diagnostic categories;
+               DM   = MAX (HCC15, HCC16, HCC17, HCC18, HCC19);
+               CHF  = HCC80;
+               COPD = HCC108;
+               CVD  = MAX (HCC95, HCC96, HCC100, HCC101);
+               VD   = MAX (HCC104, HCC105);
+               CAD  = MAX (HCC81, HCC82, HCC83);
+               RF   = HCC131;
+               %* interactions ;
+               DM_CHF       =DM*CHF      ;
+               DM_CVD       =DM*CVD      ;
+               CHF_COPD     =CHF*COPD    ;
+               COPD_CVD_CAD =COPD*CVD*CAD;
+               RF_CHF       =RF*CHF      ;
+               RF_CHF_DM    =RF*CHF*DM   ;
+
+               DM_CHF1 = DM_CHF *( RF_CHF_DM = 0);
+               RF_CHF1 = RF_CHF *( RF_CHF_DM = 0);
+
+                 %*interactions with disabled ;
+               D_HCC5 =   DISABL*HCC5 ; %*opportunistic infections;
+               D_HCC44 =  DISABL*HCC44; %*severe hematological disorders;
+               D_HCC51 =  DISABL*HCC51;  %*drug/alcohol psychosis;
+               D_HCC52 =  DISABL*HCC52;  %*drug/alcohol dependence;
+               D_HCC107 = DISABL*HCC107; %*cystic fibrosis;
+           END; *there are some diagnoses for a person;
+           ELSE DO;
+              DO I=1 TO &N_CC;
+                 HCC(I)=0;
+              END;
+              DO OVER RV;
+                 RV=0;
+              END;
+           END;
+
+           %*score calculation;
+
+           /***************************/
+           /*    community model      */
+           /***************************/;
+
+        %SCOREVAR(PVAR=SCORE_COMMUNITY, RLIST=&COMM_REG, CPREF=CE_);
+
+           /***************************/
+           /*   institutional model   */
+           /***************************/;
+
+        %SCOREVAR(PVAR=SCORE_INSTITUTIONAL, RLIST=&INST_REG, CPREF=INS_);
+
+           /***************************/
+           /*   new enrollees model   */
+           /***************************/;
+
+        %SCOREVAR(PVAR=SCORE_NEW_ENROLLEE, RLIST=&NE_REG, CPREF=NE_);
+
+           /***************************/
+           /* SNP new enrollees model */
+           /***************************/;
+
+        %SCOREVAR(PVAR=SCORE_SNP_NEW_ENROLLEE, RLIST=&NE_REG, CPREF=SNPNE_);
+
+           /****************************/
+           /*   normalize the scores   */
+           /***************************/;
+          SCORE_COMMUNITY        = SCORE_COMMUNITY        *&DF;
+          SCORE_INSTITUTIONAL    = SCORE_INSTITUTIONAL    *&DF;
+          SCORE_NEW_ENROLLEE     = SCORE_NEW_ENROLLEE     *&DF;
+          SCORE_SNP_NEW_ENROLLEE = SCORE_SNP_NEW_ENROLLEE *&DF;
+
+          OUTPUT &OUTDATA;
+       END; %*last record for a person;
+     END; %*there is a person record;
+ RUN;
+
+ %**********************************************************************
+ * step4: data checks and proc contents
+ ***********************************************************************;
+ PROC PRINT U DATA=&OUTDATA(OBS=46);
+     TITLE '*** V1213J1M output file ***';
+ RUN ;
+ PROC CONTENTS DATA=&OUTDATA;
+ RUN;
+
+ %MEND V1213J1M;
