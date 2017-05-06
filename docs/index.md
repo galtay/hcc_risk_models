@@ -9,13 +9,13 @@ Services (CMS)][1], the [Department of Health and Human Services (HHS)][2],
 or [RTI International][3].  This is an open source project to increase the
 availability of their public risk adjustment models,
 
- - [CMS HCC Models][4]
- - [HHS HCC Models][5]
+ - [CMS-HCC Models][4]
+ - [HHS-HCC Models][5] (search for the word "software")
 
 
 # Introduction
 
-## CMS Model
+## CMS Models
 
 > The CMS hierarchical condition categories (CMS-HCC) model, implemented in
 2004, adjusts Medicare capitation payments to Medicare Advantage health care
@@ -28,7 +28,7 @@ than if they had enrolled beneficiaries with the average risk profile.
 >
 > -- <cite>[Evaluation of the CMS-HCC Risk Adjustment Model][6]</cite>
 
-## HHS Model
+## HHS Models
 
 > Section 1343 of the Affordable Care Act (ACA) of 2010 provides for a program
 of risk adjustment for all non-grandfathered plans in the individual and small
