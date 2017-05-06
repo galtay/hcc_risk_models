@@ -11,8 +11,7 @@ import datetime
 import pandas
 from dateutil import relativedelta
 
-from hcc_risk_models.icd_descriptions import icd10cm_descriptions_2016
-from hcc_risk_models.icd_descriptions import icd9cm_descriptions_v32
+from hcc_risk_models.icd_descriptions import icd10cm_descriptions_2017
 
 from hcc_risk_models.common import agesexv2
 from hcc_risk_models.common import v22h79l1
@@ -82,7 +81,7 @@ class V2217_79_O1:
     REQUIRED_DIAGNOSES_COLUMNS = ['pt_id', 'diag_code', 'diag_type']
 
     JSON_ENCODER = ResultEncoder
-    ICD10_DEFS = icd10cm_descriptions_2016.Icd10CmDefinitions()
+    ICD10_DEFS = icd10cm_descriptions_2017.Icd10CmDefinitions()
 
 
     def __init__(self):
@@ -173,8 +172,8 @@ class V2217_79_O1:
         diagnosis)
 
           pt_id     - arbitrary unique identifier (e.g. HICN).
-          diag_code - ICD-9 or ICD-10 diagnosis code with no periods
-          diag_type - 9 for ICD-9 codes, 0 for ICD-10 codes
+          diag_code - ICD-10 diagnosis code with no periods
+          diag_type - 0 for ICD-10 codes
 
         """
         self.validate_demographics(demographics)

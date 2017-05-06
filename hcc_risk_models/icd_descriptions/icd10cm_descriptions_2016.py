@@ -46,19 +46,3 @@ class Icd10CmDefinitions:
 if __name__ == '__main__':
 
     icd10cm = Icd10CmDefinitions()
-
-
-
-
-#code_defs = dat[dat['is_valid']==1]
-#codes_valid = code_defs['code'].values
-#codes_all = dat['code'].values
-
-
-
-# check that all model ICD-10 codes are in the description file
-#for el in model_codes:
-#    if el['diag_type'] == 9:
-#        continue
-#    if el['diag_code'] not in codes_all:
-#        print('bad diag_code: ', el['diag_code'])
