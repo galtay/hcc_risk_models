@@ -23,7 +23,7 @@ class HccFormats:
     def __init__(self, fname=DEFAULT_FNAME):
         """Read CSV version of formats catalog file"""
         self.fname = fname
-        self.df = pandas.read_csv(fname)
+        self.df = pandas.read_csv(fname, dtype={'LABEL': object})
         self.parse_tables()
 
     def parse_tables(self):
